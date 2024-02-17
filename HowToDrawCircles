@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////
 // HOW TO DRAW CIRCLES ON THE ILI9341 TOUCHSCREEN USING SINE AND COSINE //
-// RATHER THAN THE <CIRCLE. COMMAND. USEFUL IF YOU WANT TO CREAT A      //
+// RATHER THAN THE <CIRCLE. COMMAND. USEFUL IF YOU WANT TO CREATE A     //
 // CLOCKFACE OR SIMILAR                                                 //
 // CODE CREATED FOR ARDUINO R3 BUT SHOULD BE OK FOR R4 WIFI             //
 //////////////////////////////////////////////////////////////////////////
