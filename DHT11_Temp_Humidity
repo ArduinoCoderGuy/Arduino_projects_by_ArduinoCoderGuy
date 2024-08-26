@@ -1,0 +1,151 @@
+#include "ArduinoGraphics.h"
+#include "Arduino_LED_Matrix.h"
+ArduinoLEDMatrix matrix;
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>   // include Adafruit ILI9341 TFT library
+#include <MCUFRIEND_kbv.h>
+#define TFT_CS    8      // TFT CS  pin is connected to arduino pin 8
+#define TFT_RST   9      // TFT RST pin is connected to arduino pin 9
+#define TFT_DC    10     // TFT DC  pin is connected to arduino pin 10
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+
+#define BLACK   0x0000
+#define BLUE    0x001f
+#define RED     0xF800
+#define GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0
+#define WHITE   0xFFFF
+
+#include <DHT.h>
+#define DHTPIN 6
+#define DHTTYPE DHT11
+
+DHT mydht(DHTPIN, DHTTYPE);
+int br=115200;
+int setUpDelay=1000;
+int loopDelay=1000;
+float tempC;
+float tempF;
+float hum;
+float HIC;
+float HIF;
+String tempCtxt="";
+String tempFtxt="";
+String humidityTxt="";
+String heatIdxCTxt="";
+String heatIdxFTxt="";
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(br);
+  mydht.begin();
+  delay(setUpDelay);
+  tft.begin();
+  matrix.begin();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  tempC=mydht.readTemperature(false);
+  Serial.println(tempC);
+  tempF=mydht.readTemperature(true);
+  Serial.println(tempF);
+  hum=mydht.readHumidity();
+  Serial.println(hum);
+
+  if(isnan(tempC) || isnan(tempF) || isnan(hum)){
+    return;
+  }
+  HIC=mydht.computeHeatIndex(tempC, hum, false);
+  HIF=mydht.computeHeatIndex(tempF, hum, true);
+
+  tft.fillScreen(ILI9341_WHITE);
+  tft.setTextColor(ILI9341_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(10,5);  // 10 pixels across , 5 pixels down
+  tft.println("Temp: ");
+  tft.setCursor(75,5);
+  tft.println(tempC);
+  tft.setCursor(125,5);
+  tft.println(" deg C");
+
+  tft.setCursor(10,25);  // 10 pixels across , 25 pixels down
+  tft.println("Temp: ");
+  tft.setCursor(75,25);
+  tft.println(tempF);
+  tft.setCursor(125,25);
+  tft.println(" deg F");
+
+  tft.setCursor(10,50);  // 10 pixels across , 50 pixels down
+  tft.println("Humidity:");
+  tft.setCursor(125,50);
+  tft.println(hum);
+  tft.setCursor(180,50);
+  tft.println(" %");
+
+  tft.setCursor(10,75);  // 10 pixels across , 25 pixels down
+  tft.println("Heat Idx: ");
+  tft.setCursor(125,75);
+  tft.println(HIC);
+  tft.setCursor(180,75);
+  tft.println(" C");
+
+  tft.setCursor(10,100);  // 10 pixels across , 25 pixels down
+  tft.println("Heat Idx: ");
+  tft.setCursor(125,100);
+  tft.println(HIF);
+  tft.setCursor(180,100);
+  tft.println(" F");
+
+  matrixText();
+
+  delay(loopDelay);
+}
+ void matrixText(){
+  tempCtxt="Temp: " + String(tempC) + " C";
+  matrix.beginDraw();
+  matrix.textScrollSpeed(50);
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0,1,255,0,0);  // Column, Row, RED, Green,Blue
+  matrix.println(tempCtxt);
+  matrix.endText(SCROLL_LEFT);
+  matrix.endDraw();
+
+  tempFtxt="Temp: " + String(tempF) + " F";
+  matrix.beginDraw();
+  matrix.textScrollSpeed(50);
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0,1,255,0,0);  // Column, Row, RED, Green,Blue
+  matrix.println(tempFtxt);
+  matrix.endText(SCROLL_LEFT);
+  matrix.endDraw();
+
+  humidityTxt="Humidity: " + String(hum) + " %";
+  matrix.beginDraw();
+  matrix.textScrollSpeed(50);
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0,1,255,0,0);  // Column, Row, RED, Green,Blue
+  matrix.println(humidityTxt);
+  matrix.endText(SCROLL_LEFT);
+  matrix.endDraw();
+
+  heatIdxCTxt="Heat Index: " + String(HIC) + " C";
+  matrix.beginDraw();
+  matrix.textScrollSpeed(50);
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0,1,255,0,0);  // Column, Row, RED, Green,Blue
+  matrix.println(heatIdxCTxt);
+  matrix.endText(SCROLL_LEFT);
+  matrix.endDraw();
+
+  heatIdxFTxt="Heat Index: " + String(HIF) + " F";
+  matrix.beginDraw();
+  matrix.textScrollSpeed(50);
+  matrix.textFont(Font_5x7);
+  matrix.beginText(0,1,255,0,0);  // Column, Row, RED, Green,Blue
+  matrix.println(heatIdxFTxt);
+  matrix.endText(SCROLL_LEFT);
+  matrix.endDraw();
+ }
