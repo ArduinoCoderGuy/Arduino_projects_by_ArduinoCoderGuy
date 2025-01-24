@@ -1,0 +1,72 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+int buttonPin=3;
+int buttonValue;
+int inputPin=4;   // define ultrasonic signal receiver pin ECHO to D4
+int outputPin=5;  // define ultrasonic signal transmitter pin TRIGGER to D5
+void setup()
+{
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);    // Don't proceed, loop forever
+  }
+display.display();
+delay(1000);  // Pause for 1 second
+              // Clear the buffer
+display.clearDisplay();
+display.setTextSize(2);
+display.setTextColor(SSD1306_WHITE);
+display.setCursor(10,10);
+display.println(" Hello.");
+display.println(" Push the");
+display.println(" button.");
+display.display();
+
+Serial.begin(9600);
+pinMode(inputPin, INPUT);
+pinMode(outputPin, OUTPUT);
+pinMode(buttonPin,INPUT);
+digitalWrite(buttonPin,HIGH);
+}
+
+void loop()
+{
+buttonValue=digitalRead(buttonPin);
+if (buttonValue == 0){
+  readDistance();
+}
+
+}
+void readDistance(void)
+{
+digitalWrite(outputPin, LOW); 
+delayMicroseconds(2);
+digitalWrite(outputPin, HIGH);           // Pulse for 10μ s to trigger ultrasonic detection
+delayMicroseconds(10);
+digitalWrite(outputPin, LOW);
+int distance = pulseIn(inputPin, HIGH); // Read receiver pulse time 
+distance= distance/58;                  // Transform pulse time to distance 
+Serial.println(distance);               //Output distance 
+display.clearDisplay();
+display.setCursor(10,10);
+display.println("Distance");
+display.println(distance);
+display.display();
+delay(2000);
+
+display.clearDisplay();
+display.setTextSize(2);
+display.setTextColor(SSD1306_WHITE);
+display.setCursor(10,10);
+display.println(" Hello.");
+display.println(" Push the");
+display.println(" button.");
+display.display();
+}
