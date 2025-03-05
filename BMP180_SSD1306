@@ -1,0 +1,303 @@
+// SET UP ARDUINO MATRIX AND DISPLAY 'PHIL'
+#include "Arduino_LED_Matrix.h"
+ArduinoLEDMatrix matrix;
+byte frame[8][12] = {
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+  { 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1 },
+  { 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1 },
+  { 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 1 },
+  { 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1 },
+  { 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1 },
+  { 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1 },
+  { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+// SET UP OLED DISPLAYS & PRESSURE SENSOR
+#include <Adafruit_BMP085.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#define OLED_RESET -1     // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 64  // OLED display height, in pixels
+Adafruit_SSD1306 display1(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_BMP085 BP;
+
+// SET UP DS3231 CLOCK MODULE
+// #include <DS3231.h>  //Includes the DS3231 library BY Anrew Wickert JeeLabs
+#include "RTC.h"
+
+// SET UP VARIABLES
+bool BMPconnected;
+float BarPress = 30;
+float BarPressNow = 30;
+float alt = 200;
+float pressRecord = 28;
+int hour;
+int minute;
+int second;
+
+void setup() {
+  // put your setup code here, to run once:
+  display1.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // Default OLED address.
+  if (!display1.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;  // Don't proceed, loop forever
+  }
+  display2.begin(SSD1306_SWITCHCAPVCC, 0x3D);  // Default OLED address.
+  if (!display2.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;  // Don't proceed, loop forever
+  }
+  RTC.begin();
+  Serial.begin(9600);
+  BMPconnected = BP.begin();
+  if (BMPconnected == true) {
+    Serial.println("BMP180 found and connected");
+    display1.clearDisplay();
+    display1.display();
+    display1.setCursor(0, 12);
+    display1.setTextColor(WHITE);
+    display1.setTextSize(2);
+    display1.println("BMP180-OK.");
+    display1.display();
+    delay(3000);
+  }
+  if (BMPconnected == false) {
+    Serial.println("BMP180 not found!");
+    display1.setCursor(0, 12);
+    display1.setTextColor(WHITE);
+    display1.setTextSize(2);
+    display1.println("BMP180 - FAULT!.");
+    display1.display();
+    for (;;) {}
+  }
+  matrix.begin();
+  matrix.renderBitmap(frame, 8, 12);
+  display1.clearDisplay();
+  display1.display();
+  display2.clearDisplay();
+  display2.display();
+  display2.setCursor(0, 0);
+  
+  display2.setTextSize(1);
+  
+  display2.setTextColor(WHITE);
+  display2.print("Min 28 In HG");
+  display2.setCursor(0, 55);
+  display2.print("Max 32 In HG");
+  display2.drawLine(0, 11, 128, 11, SSD1306_WHITE);
+  display2.drawLine(0, 52, 128, 52, SSD1306_WHITE);
+  display2.display();
+}
+
+void loop() {
+  // GET PRESSURE READING FROM 'normPress' FUNCTION AND DISPLAY ON SCREEN 1
+  BarPressNow = normPress(alt);  // BP.readPressure()*0.0002953;
+  BarPress = 0.95 * BarPress + 0.05 * BarPressNow;
+  display1.setCursor(0, 12);
+  display1.setTextColor(WHITE);
+  display1.setTextSize(3);
+  display1.println(BarPress);
+  display1.println("In HG");
+  display1.display();
+  delay(100);
+  display1.clearDisplay();
+
+  RTCTime currenttime;
+  RTC.getTime(currenttime);
+
+  hour = currenttime.getHour();
+  minute = currenttime.getMinutes();
+  second = currenttime.getSeconds();
+  Serial.print(currenttime.getHour());
+  Serial.print(":");
+  Serial.print(currenttime.getMinutes());
+  Serial.print(":");
+  Serial.println(currenttime.getSeconds());
+
+  if (hour == 0 && minute == 30 && second == 1) {
+    display2.fillRect(0, 13, 3,(BarPress-28)*5+13, SSD1306_WHITE);
+    Serial.println("Done");
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 01 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(5, 50, 8, (BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 2 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(10, 50, 13, (BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 3 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(15, 50, 18, (BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 4 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(20, 50, 23, (BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 5 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(25, 50, 28,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 6 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(30, 50, 33,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 7 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(35, 50, 38,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 8 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(40, 50, 43,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 9 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(45, 50, 48,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 10 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(50, 50, 53,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 11 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(55, 50, 58,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 12 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(60, 50, 63,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 13 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(65, 50, 68,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 14 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(70, 50, 73,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 15 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(75, 50, 78,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 16 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(80, 50, 83,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 17 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(85, 50, 88,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 18 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(90, 50, 93,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 19 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(95, 50, 98,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 20 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(100, 50, 103,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 21 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(105, 50, 108,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 22 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(110, 50, 113,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  if (hour == 23 && minute == 30 && second == 1) {
+    display2.setCursor(0, 64);
+    display2.fillRect(115, 50, 118,(BarPress-28)*5+13, SSD1306_WHITE);
+    display2.display();
+    delay(1000);
+  }
+  //displayTime();
+}
+
+// FUNCTION TO READ PRESSURE AND RETURN RESULT TO 'BarPressNow' variable
+float normPress(float elev) {
+  float BPRaw;
+  float BPNorm;
+  float T0 = 288.15;
+  float L = 0.0065;
+  float M = 0.0289644;
+  float R = 8.3144598;
+  float g = 9.8;
+  float c = M * g / (R * L);
+  BPRaw = BP.readPressure() * 0.0002953;
+  BPNorm = BPRaw / pow(1 - L * elev / T0, c);
+  return BPNorm;
+}
+
+/*void displayTime() {
+  DateTime now = myRTC.now();
+  display2.clearDisplay();
+  display2.display();
+  display2.setCursor(0, 0);
+  display2.setTextSize(2);
+  display2.setTextColor(WHITE);
+  display2.print('H');
+  display2.setCursor(15, 0);
+  display2.print(now.hour(), DEC);
+  display2.setCursor(40, 0);
+  display2.print('M');
+  display2.setCursor(55, 0);
+  display2.print(now.minute(), DEC);
+  display2.display();
+  delay(1000);
+}
+*/
