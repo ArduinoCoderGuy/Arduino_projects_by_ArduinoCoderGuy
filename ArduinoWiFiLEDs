@@ -1,0 +1,98 @@
+/* You will need to creade a secrects.h tab in your project and write:
+#define SSID "YourNetworkName"
+#define PASS "YourNetworkPassword"
+
+Use this as the srver in conjunction with the Thonny client written in python.
+*/
+#include <WiFiS3.h>
+#include "secrets.h"
+WiFiUDP udp;
+int PORT = 8888;
+char myPacket[255];
+int dataLen;  // Keep track of Packet length
+String color;
+String response;
+String ledColor;
+int redLED = 9;
+bool redstatus = false;
+int grnLED = 8;
+bool grnstatus = false;
+String ledResponse;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  Serial.print("Connecting to ");
+  Serial.println(SSID);
+  WiFi.begin(SSID, PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  pinMode(redLED, OUTPUT);
+  pinMode(grnLED, OUTPUT);
+  Serial.println('\n Connected to WiFi.');
+  Serial.println(WiFi.localIP());
+  udp.begin(PORT);
+  Serial.print("UDP Server dtarted on port ");
+  Serial.print(PORT);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (udp.parsePacket()) {
+    dataLen = udp.available();
+    Serial.println(dataLen);
+
+    udp.read(myPacket, 255);
+    Serial.println(myPacket);
+    myPacket[dataLen] = 0;
+    Serial.println(myPacket);
+    color = String(myPacket);
+    ledColor = color;
+    color.trim();
+    color.toLowerCase();
+
+    if (ledColor == "red" && redstatus == false) {
+      digitalWrite(redLED, HIGH);
+      redstatus = true;
+      ledColor = "";
+      ledResponse = "I also turned the RED led ON.";
+    }
+    if (ledColor == "red" && redstatus == true) {
+      digitalWrite(redLED, LOW);
+      redstatus = false;
+      ledColor = "";
+      ledResponse = "I also turned the RED led OFF.";
+    }
+    if (ledColor == "green" && grnstatus == false) {
+      digitalWrite(grnLED, HIGH);
+      grnstatus = true;
+      ledColor = "";
+      ledResponse = "I also turned the GREEN led ON.";
+    }
+    if (ledColor == "green" && grnstatus == true) {
+      digitalWrite(grnLED, LOW);
+      grnstatus = false;
+      ledColor = "";
+      ledResponse = "I also turned the GREEN led OFF.";
+    }
+    if (color == "red" || color == "green") {
+      Serial.println("Received colour: " + color);
+      response = "Here is your " + color + " marble." + ledResponse;
+      ledResponse = "";
+      udp.beginPacket(udp.remoteIP(), udp.remotePort());
+      udp.print(response);
+      udp.endPacket();
+      Serial.println("SENT: " + response);
+    } else{
+      Serial.println("We are out of " + color + " marbles.");
+      response = ("Sorry, we are out of " + color + " marbles.");
+      udp.beginPacket(udp.remoteIP(), udp.remotePort());
+      udp.print(response);
+      udp.endPacket();
+      Serial.println("SENT: " + response);
+    }
+
+  }
+}
+
