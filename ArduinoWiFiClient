@@ -1,0 +1,21 @@
+#Write this program in 'Thonny'
+
+import socket
+HOST="0.0.0.0"  # Get the IP address from the Arduino WiFi program
+PORT=8888
+mySocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+mySocket.settimeout(5.0)
+print("UDP Client Started. Enter a colour or 'quit' to exit. ")
+while True:
+    color = input("Enter a colour: ")
+    if color.lower()=='quit' or color.lower()=='q':
+        break
+    mySocket.sendto(color.encode(), (HOST,PORT))
+    print("Sent "+color+" to HOST ",HOST,PORT)
+    try:
+        response, server_address=mySocket.recvfrom(1024)
+        print("Server Response: ",response.decode())
+    except socket.timeout:
+        print("No Response! After 5 seconds")
+mySocket.close()
+print("Connection closed")
