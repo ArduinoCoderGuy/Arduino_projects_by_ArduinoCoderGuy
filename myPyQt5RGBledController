@@ -1,0 +1,433 @@
+import sys
+import socket
+from PyQt5.QtCore import * 
+from PyQt5.QtGui import * 
+from PyQt5.QtWidgets import * 
+WINDOW_SIZE = 500
+DISPLAY_HEIGHT = 100
+BUTTON_SIZE = 50
+
+redStrength=0
+greenStrength=0
+blueStrength=0
+
+HOST="192.168.1.224"
+PORT=12345
+mySocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+mySocket.settimeout(5.0)
+
+class MainWindow(QMainWindow):
+    count = 0
+
+    def __init__(self, parent = None):
+        super(MainWindow, self).__init__(parent)
+        ######### main window layout ##########
+        self.setGeometry(100,100,500,300)
+        bar = self.menuBar()
+        self.mainLayout = QVBoxLayout()
+        self.widgetContainer = QWidget(self)
+        self.widgetContainer.setLayout(self.mainLayout)
+        self.setCentralWidget(self.widgetContainer)
+        self.setWindowTitle("LED Blinker")
+        ###### Create a Message Box ###########
+        text_browser = QTextBrowser(self)
+        text_browser.setPlainText("Welcome to RGB LED control center\n\n"
+            "This widget allows you to control a RGB LED "
+            "on your remote Arduino server."
+            "Please search Toptechboy on youtube.")
+        self.mainLayout.addWidget(text_browser)
+        ######### Create a label ##############
+        label = QLabel("Press some buttons.")
+        label.setAlignment(Qt.AlignCenter)			# Align to center
+        self.mainLayout.addWidget(label)					# Add label to the widget
+        label.setStyleSheet("font-size: 24px; color:blue;padding: 10px;")
+        label.setFixedHeight(50)
+        
+        ######### Create button's #############
+        self.pushButtonLayout = QHBoxLayout(self)
+        self.mainLayout.addLayout(self.pushButtonLayout)
+        # Above is the layout for the buttons #
+        pushButtonRed = QPushButton("Blink Red!")
+        pushButtonRed.setStyleSheet("background-color: red; color: white; font-size: 24px; padding: 10;")
+        pushButtonRed.setFixedSize(150,50)
+        def pushButtonRedClicked(self):
+            
+            label.setText("You pressed the Red button!")
+            text_browser.append("You pressed the Red button!")
+            label.setStyleSheet("font-size: 24px;color: red;  padding: 10;")
+            
+            cmd = "redBlink:5:100:"+str(redStrength)+"\n"
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+                message = ("Server response:", response.decode())
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+                
+        pushButtonRed.clicked.connect(pushButtonRedClicked)
+        self.pushButtonLayout.addWidget(pushButtonRed)
+        
+        pushButtonGreen = QPushButton("Blink Green!")
+        pushButtonGreen.setStyleSheet("background-color: green; color: white; font-size: 24px; padding: 10;")
+        pushButtonGreen.setFixedSize(150,50)
+        def pushButtonGreenClicked(self):
+            
+            label.setText("You pressed the Green button!")
+            text_browser.append("You pressed the Green button!")
+            label.setStyleSheet("font-size: 24px;color: green;  padding: 10;")
+            cmd = "greenBlink:5:100:"+str(greenStrength)+"\n"
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+                
+        pushButtonGreen.clicked.connect(pushButtonGreenClicked)
+        self.pushButtonLayout.addWidget(pushButtonGreen)
+        
+        pushButtonBlue = QPushButton("Blink Blue!")
+        pushButtonBlue.setStyleSheet("background-color: blue; color: white; font-size: 24px; padding: 10;")
+        pushButtonBlue.setFixedSize(150,50)
+        def pushButtonBlueClicked(self):
+            
+            label.setText("You pressed the blue button!")
+            text_browser.append("You pressed the Blue button!")
+            label.setStyleSheet("font-size: 24px;color: blue;  padding: 10;")
+            cmd = "blueBlink:5:100:"+str(blueStrength)+"\n"
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+                
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+                
+        pushButtonBlue.clicked.connect(pushButtonBlueClicked)
+        self.pushButtonLayout.addWidget(pushButtonBlue)
+        ######### Create Toggles #############
+        ###red###
+        self.toggleButtonLayout = QHBoxLayout(self)
+        self.mainLayout.addLayout(self.toggleButtonLayout)
+        
+        toggleButtonRed = QPushButton("Toggle Red")
+        toggleButtonRed.setCheckable(True)
+        toggleButtonRed.setStyleSheet("background-color: red; color: white; font-size: 18px; padding: 10;")
+        toggleButtonRed.setFixedSize(150,50)
+        
+                
+        def toggleRed(checked):
+            if checked:
+                text_browser.append("Switching red ON.")
+                label.setText("Red Toggle ON")
+                label.setStyleSheet("font-size: 24px;color: red;  padding: 10;")
+                
+                cmd="redOn\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+            if not checked:
+                text_browser.append("Switching red Off.")
+                label.setText("Red Toggle OFF")
+                label.setStyleSheet("font-size: 24px;color: red;  padding: 10;")
+        
+                cmd="redOff\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+        
+        toggleButtonRed.toggled.connect(toggleRed)
+        self.toggleButtonLayout.addWidget(toggleButtonRed)
+        
+        ##green##
+        toggleButtonGreen = QPushButton("Toggle Green")
+        toggleButtonGreen.setCheckable(True)
+        toggleButtonGreen.setStyleSheet("background-color: green; color: white; font-size: 18px; padding: 10;")
+        toggleButtonGreen.setFixedSize(150,50)
+        
+        def toggleGreen(checked):
+            if checked:
+                text_browser.append("Switching green On.")
+                label.setText("Green Toggle ON")
+                label.setStyleSheet("font-size: 24px;color: green;  padding: 10;")
+                
+                cmd="greenOn\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+            if not checked:
+                text_browser.append("Switching green Off.")
+                label.setText("Green Toggle OFF")
+                label.setStyleSheet("font-size: 24px;color: green;  padding: 10;")
+        
+                cmd="greenOff\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+        
+        toggleButtonGreen.toggled.connect(toggleGreen)
+        self.toggleButtonLayout.addWidget(toggleButtonGreen)
+        ###Blue###
+        toggleButtonBlue = QPushButton("Toggle Blue")
+        toggleButtonBlue.setCheckable(True)
+        toggleButtonBlue.setStyleSheet("background-color: blue; color: white; font-size: 18px; padding: 10;")
+        toggleButtonBlue.setFixedSize(150,50)
+        
+        def toggleBlue(checked):
+            if checked:
+                text_browser.append("Switching blue On.")
+                label.setText("Blue Toggle ON")
+                label.setStyleSheet("font-size: 24px;color: blue;  padding: 10;")
+                
+                cmd="blueOn\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+            if not checked:
+                text_browser.append("Switching blue Off.")
+                label.setText("Blue Toggle OFF")
+                label.setStyleSheet("font-size: 24px;color: blue;  padding: 10;")
+        
+                cmd="blueOff\n"
+                cmdEncoded=cmd.encode()
+                mySocket.sendto(cmdEncoded,(HOST,PORT))
+                print('Sent '+cmd+'to HOST',HOST,PORT)
+                try:
+                    response, server_address = mySocket.recvfrom(1024)
+                    print("Server response:", response.decode())
+                except socket.timeout:
+                    print("No response received from server within 5 seconds")
+                
+        toggleButtonBlue.toggled.connect(toggleBlue)
+        self.toggleButtonLayout.addWidget(toggleButtonBlue)
+        ##### SLIDER BARS #####
+        ### red ###
+        redSlider = QSlider(Qt.Horizontal)
+        redSlider.setMinimum(0)
+        redSlider.setMaximum(100)
+        redSlider.setStyleSheet("""
+        QSlider::groove:horizontal {background: lightpink; height: 20px; border-radius: 5px;}
+        QSlider::handle:horizontal {background: red; margin-top: -10px; margin-bottom: -10px; height: 40px;width: 20px; border-radius:5px;}
+        """
+        )
+        def updateRedSlider():
+            global redStrength
+            label.setText("Red Slider: "+str(redSlider.value())) # value of the slider 1 -100
+            label.setStyleSheet("font-size: 24px;color: red; padding: 10;")
+            cmd="redBright:"+str(redStrength)+"\n"
+            redStrength = int(round(redSlider.value()/100*255)) # convert to 0-256
+            print("Red Strength: ")
+            print (redStrength)
+            if redStrength > 0:
+                toggleButtonRed.setChecked(True)
+            if redStrength == 0:
+                toggleButtonRed.setChecked(False)
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+
+
+        redSlider.valueChanged.connect(updateRedSlider)
+        self.mainLayout.addWidget(redSlider)
+        ### GREEN ###
+        greenSlider = QSlider(Qt.Horizontal)
+        greenSlider.setMinimum(0)
+        greenSlider.setMaximum(100)
+        greenSlider.setStyleSheet("""
+        QSlider::groove:horizontal {background: lightgreen; height: 20px; border-radius: 5px;}
+        QSlider::handle:horizontal {background: green; margin-top: -10px; margin-bottom: -10px; height: 40px;width: 20px; border-radius:5px;}
+        """
+        )
+        def updateGreenSlider():
+            global greenStrength
+            label.setText("Green Slider: "+str(greenSlider.value())) # value of the slider 1 -100
+            label.setStyleSheet("font-size: 24px;color: green; padding: 10;")
+            cmd="greenBright:"+str(greenStrength)+"\n"
+            greenStrength = int(round(greenSlider.value()/100*255)) # convert to 0-256
+            print("Green Strength: ")
+            print (greenStrength)
+            if greenStrength > 0:
+                toggleButtonGreen.setChecked(True)
+            if greenStrength == 0:
+                toggleButtonGreen.setChecked(False)
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+
+
+        greenSlider.valueChanged.connect(updateGreenSlider)
+        self.mainLayout.addWidget(greenSlider)
+        #### BLUE ####
+        blueSlider = QSlider(Qt.Horizontal)
+        blueSlider.setMinimum(0)
+        blueSlider.setMaximum(100)
+        blueSlider.setStyleSheet("""
+        QSlider::groove:horizontal {background: lightblue; height: 20px; border-radius: 5px;}
+        QSlider::handle:horizontal {background: blue; margin-top: -10px; margin-bottom: -10px; height: 40px;width: 20px; border-radius:5px;}
+        """
+        )
+        def updateBlueSlider():
+            global blueStrength
+            label.setText("Blue Slider: "+str(blueSlider.value())) # value of the slider 1 -100
+            label.setStyleSheet("font-size: 24px;color: blue; padding: 10;")
+            cmd="blueBright:"+str(blueStrength)+"\n"
+            blueStrength = int(round(blueSlider.value()/100*255)) # convert to 0-256
+            print("Blue Strength: ")
+            print (blueStrength)
+            if blueStrength > 0:
+                toggleButtonBlue.setChecked(True)
+            if blueStrength == 0:
+                toggleButtonBlue.setChecked(False)
+            cmdEncoded=cmd.encode()
+            mySocket.sendto(cmdEncoded,(HOST,PORT))
+            print('Sent '+cmd+'to HOST',HOST,PORT)
+            try:
+                response, server_address = mySocket.recvfrom(1024)
+                print("Server response:", response.decode())
+            except socket.timeout:
+                print("No response received from server within 5 seconds")
+
+
+        blueSlider.valueChanged.connect(updateBlueSlider)
+        self.mainLayout.addWidget(blueSlider)
+        #######################################
+        ##     message boxes                 ##
+        #######################################
+        
+        def show_popup_about(self):
+            msg = QMessageBox()
+            msg.setWindowTitle("Use this client to control RGB LED")
+            msg.setText("Use the Buttons, toggles and slideers, to control a RGB LED on a remote server.")
+
+            x = msg.exec_()
+            
+        def show_popup_help(self):
+            msg = QMessageBox()
+            msg.setWindowTitle("Help!")
+            msg.setText("Please search for Top Tech Boy.com, for tutorials.")
+
+            x = msg.exec_()
+        
+        def show_popup_options(self):
+            msg = QMessageBox()
+            msg.setWindowTitle("Options?")
+            msg.setText("Well, you can either play around or do more coding.")
+
+            x = msg.exec_()   
+        ######### Task bar item menu ##########        
+        file = bar.addMenu("File")		# Setup the Menu Items
+        file.addAction("Exit")
+        
+        colorMenu = bar.addMenu("Choose Color")
+        redSubMenu = colorMenu.addMenu("Red")
+        redBlinkFile = redSubMenu.addAction("Red blink")
+        redBlinkFile.triggered.connect(pushButtonRedClicked)
+        redOnOff = redSubMenu.addAction("Red on/off(Not Working!)")
+        redOnOff.triggered.connect(toggleRed)
+        
+        greenSubMenu = colorMenu.addMenu("Green")
+        greenBlinkFile = greenSubMenu.addAction("Green blink")
+        greenBlinkFile.triggered.connect(pushButtonGreenClicked)
+        greenOnOff = greenSubMenu.addAction("Green on/off(Not working!)")
+        greenOnOff.triggered.connect(toggleGreen)
+        
+        blueSubMenu = colorMenu.addMenu("Blue")
+        blueBlinkFile = blueSubMenu.addAction("Blue blink")
+        blueBlinkFile.triggered.connect(pushButtonBlueClicked)
+        blueOnOff = blueSubMenu.addAction("Blue on/off(Not working!)")
+        blueOnOff.triggered.connect(toggleGreen)
+        
+        tools = bar.addMenu("Tools")
+        options = tools.addAction("Options")
+        options.triggered.connect(show_popup_options)
+        
+        helpmenu = bar.addMenu("Help")
+        helpme = helpmenu.addAction("Help")
+        helpme.triggered.connect(show_popup_help)
+        about = helpmenu.addAction("About")
+        about.triggered.connect(show_popup_about)
+        
+        
+        file.triggered[QAction].connect(self.windowaction)
+        self.setWindowTitle("MDI demo")        
+ 
+        
+        
+    def _createDisplay(self):
+        self.display = QLineEdit()
+        self.display.setFixedHeight(DISPLAY_HEIGHT)
+        self.display.setGeometry(90, 90, 50, 50)
+        self.display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.display.setReadOnly(False)
+        self.mainLayout.addWidget(self.display)
+        
+   
+        
+    def windowaction(self, q):
+        print ("triggered")
+
+        if q.text() == "New": 
+            MainWindow.count = MainWindow.count+1 
+            sub = QMdiSubWindow() 
+            sub.setWidget(QTextEdit()) 
+            sub.setWindowTitle("subwindow"+str(MainWindow.count))   
+            self.mdi.addSubWindow(sub) 
+            sub.show()
+
+        if q.text() == "cascade": 
+            self.mdi.cascadeSubWindows()
+        if q.text() == "Tiled": 
+            self.mdi.tileSubWindows()
+
+def main(): 
+    app = QApplication(sys.argv) 
+    ex = MainWindow() 
+    ex.show() 
+    sys.exit(app.exec_()) 
+
+if __name__ == '__main__': 
+    main()
+
+
