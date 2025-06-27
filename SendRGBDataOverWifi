@@ -1,0 +1,102 @@
+import pyqtgraph as pg
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import QGuiApplication
+import sys
+from math import sin,pi
+import time
+
+import socket
+ 
+# Arduino’s IP address (from Arduino Serial Monitor)
+HOST = "192.168.0.0  "  # Use Your Arduino's IP. It will print when
+                        #You Run the Arduino Server Program
+PORT = 12345            # Must match Arduino’s UDP port
+ 
+# Create a UDP socket
+mySocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+mySocket.settimeout(5.0)  # 5 seconds timeout for responses
+
+Period = 5
+frequency = 1/Period
+numPoints = 100
+timeStep = Period/numPoints
+redData = [0]*numPoints
+timeData =[0]*numPoints
+blueData = [0]*numPoints
+greenData = [0]*numPoints
+
+app = QApplication([])
+window = QMainWindow()
+window.setWindowTitle("Red Sine Wave Graph")
+window.setGeometry(100,100,800,600)
+ 
+#screens =QGuiApplication.screens()
+#window.move(screens[1].geometry().x() +100,screens[1].geometry().y() +100)
+ 
+widgetContainer =QWidget()
+window.setCentralWidget(widgetContainer)
+ 
+mainLayout = QVBoxLayout(widgetContainer)
+ 
+plotWidget = pg.PlotWidget()
+plotWidget.setLabel("left", "y=sin(2*Pi*f*t")
+plotWidget.setLabel("bottom", "Time (s)")
+plotWidget.setTitle("My Fine Sin Wave")
+plotWidget.addLegend()
+mainLayout.addWidget(plotWidget)
+ 
+for i in range(numPoints):
+    t = i * timeStep
+    timeData[i] = t
+    redData[i] = sin(2*pi*frequency*t)
+    greenData[i] = sin(2*pi*frequency*t)
+    blueData[i] = sin(2*pi*frequency*t)
+    
+redPlot = plotWidget.plot(timeData,redData, pen=pg.mkPen("r", width=3), name="Red")
+greenPlot = plotWidget.plot(timeData,greenData, pen=pg.mkPen("g", width=3), name="Green")
+bluePlot = plotWidget.plot(timeData,blueData, pen=pg.mkPen("b", width=3), name="Blue")
+tStart = time.perf_counter()
+def updateGraph():
+    global t,tStart,frequency
+    t = t +timeStep
+    r= sin(2.2*pi*frequency*t)
+    g= sin(2.5*pi*frequency*t)
+    b= sin(2.7*pi*frequency*t)
+    redWrite = int((r*255 + 255)/2)
+    greenWrite = int((g*255 + 255)/2)
+    blueWrite = int((b*255 + 255)/2)
+    myData=str(redWrite) +':'+ str(greenWrite)+':'+ str(blueWrite)+'\n'
+    myDataEncoded = myData.encode()
+    mySocket.sendto(myDataEncoded, (HOST,PORT))
+        # Try to get a response, skip on timeout
+    try:
+        response, server_address = mySocket.recvfrom(1024)
+        #print("Server response:", response.decode())
+    except socket.timeout:
+        print("No response received from server within 5 seconds")
+        
+    for i in range(numPoints -1):
+        redData[i] = redData[i+1]
+        greenData[i] = greenData[i+1]
+        blueData[i] = blueData[i+1]
+        timeData[i] = timeData[i+1]
+    redData[numPoints - 1] = r
+    greenData[numPoints - 1] = g
+    blueData[numPoints - 1] = b
+    timeData[numPoints -1] = t
+    
+    redPlot.setData(timeData,redData)
+    greenPlot.setData(timeData,greenData)
+    bluePlot.setData(timeData,blueData)
+    if redData[0] <=0 and redData[1] > 0:
+        measuredPeriod = time.perf_counter() - tStart
+        print("Measured Period: ",measuredPeriod)
+        tStart = time.perf_counter()
+ 
+timer = QTimer()
+timer.timeout.connect(updateGraph)
+timer.start(int(timeStep*1000))
+ 
+window.show()
+sys.exit(app.exec_())
